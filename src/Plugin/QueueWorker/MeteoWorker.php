@@ -81,7 +81,7 @@ class MeteoWorker extends ReportWorkerBase  {
                 }
             }
             $matches = array();
-            preg_match("(\s*?([\p{L}\p{P}-]+)\s*?)", $stationName, $matches, PREG_OFFSET_CAPTURE);
+            preg_match("/\s*?([\p{L}\p{P}-]+)\s*?/u", $stationName, $matches, PREG_OFFSET_CAPTURE);
             $stationName = $matches[1][0];
             
             $query = $this->database->upsert(Database::METEO_DB_MAIN_TABLE_NAME);

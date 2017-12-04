@@ -25,28 +25,28 @@ final class MeteoDataParser {
     static public function getTemperatureDevPoint($tempStr)
     {
         $matches = array();
-        $reg_return = preg_match("((\d+|\d+.\d+)\s+Â°C)", $tempStr, $matches, PREG_OFFSET_CAPTURE);
+        $reg_return = preg_match("/(\-*(\d+|\d+.\d+))\s+°C/u", $tempStr, $matches, PREG_OFFSET_CAPTURE);
         return (float) $matches[1][0];
     }
 
     static public function getPressure($pressureStr)
     {
         $matches = array();
-        preg_match("((\d+|\d+.\d+)\s+hPa)", $tempStr, $matches, PREG_OFFSET_CAPTURE);
+        preg_match("/(\d+|\d+.\d+)\s+hPa/u", $pressureStr, $matches, PREG_OFFSET_CAPTURE);
         return (float) $matches[1][0];
     }
 
     static public function getRain($rainStr)
     {
         $matches = array();
-        preg_match("((\d+|\d+.\d+)\s+mm)", $tempStr, $matches, PREG_OFFSET_CAPTURE);
+        preg_match("/(\d+|\d+.\d+)\s+mm/u", $rainStr, $matches, PREG_OFFSET_CAPTURE);
         return (float) $matches[1][0];
     }
 
     static public function getHumidity($humidityStr)
     {
         $matches = array();
-        preg_match("((\d+)\s*%)", $tempStr, $matches, PREG_OFFSET_CAPTURE);
+        preg_match("/(\d+)\s*%/u", $humidityStr, $matches, PREG_OFFSET_CAPTURE);
         return (float) $matches[1][0];       
     }
 }
