@@ -1,0 +1,21 @@
+{{ form.form_build_id }}
+{{ form.form_token }}
+{{ form.form_id }}
+
+<div id="graph_chmi"></div>
+
+<div class="row">
+	<div class="col-sm-4">
+		{{ form.station_select }}
+	</div>
+	<div class="col-sm-4">
+		{{ form.observable_select }}
+	</div>
+	<div id="db_select" class="col-sm-4">
+		{{ form.db_select }}
+	</div>
+</div>
+
+<div id="station_table">
+	{{ form.station_table }}
+</div>

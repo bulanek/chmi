@@ -1,0 +1,10 @@
+cron_chmi.description:
+  title: Chmi data 
+  route_name: cron_chmi
+  parent: system.admin_config_services
+
+graph_chmi:
+  title: Meteo output
+  route_name: graph_chmi
+  parent: main
+  menu_name: main

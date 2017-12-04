@@ -1,0 +1,46 @@
+{#
+
+Description text for the Js chmi graph.
+
+#}
+
+{#
+
+/**
+ * @file
+ * Template file for js_example module.
+ */
+#}
+
+<div class="demo">
+	<h2>
+		{{  title }}
+	</h2>
+	<div id="graph_and_table_chmi">
+		<div id="combo selection">
+			<form action="/action_page.php">
+				<select name="Station select">
+					<option value="volvo">Volvo</option>
+				</select> <br>
+				<br> <input type="submit">
+			</form>
+		</div>
+		<div id="chmi_graph">
+		</div>
+		<div id = "table data">
+			<table id = "chmi_table">
+				<thead>
+					<th> Date & time </th>
+					<th> Temperature </th>
+					<th> Altitude </th>
+					<th> Flow </th>
+                </thead>
+                <tbody>
+                </tbody>
+			</table>
+		</div>
+	</div>
+</div>
+<!-- End demo -->
+
+

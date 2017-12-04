@@ -1,0 +1,15 @@
+cron_chmi:
+  path: '/chmi-cron'
+  defaults:
+    _form: '\Drupal\chmi\Form\ChmiCronForm'
+    _title: 'Meteo Cron'
+  requirements:
+    _permission: 'access content'
+
+graph_chmi:
+  path: '/chmi-js'
+  defaults:
+    _form: '\Drupal\chmi\Form\JavascriptForm'
+    _title: 'Meteo output'
+  requirements:
+    _permission: 'access content'

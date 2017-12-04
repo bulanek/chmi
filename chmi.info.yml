@@ -1,0 +1,9 @@
+name: Chmi
+type: module
+description: 'Cron for download from chmi and javascript for show'
+package: Custom
+dependencies:
+  - drupal:node
+  - jqplot
+version: '8.x-1.0'
+core: '8.x'

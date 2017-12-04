@@ -1,0 +1,13 @@
+# A simple script using jquery 
+graph_chmi:
+  js:
+    js/graph_chmi.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupalSettings
+    - core/drupal
+#    - jqplot/jqplot
+    - jqplot/jqplot.canvasAxisLabelRenderer
+    - jqplot/jqplot.canvasAxisTicksRenderer
+    - jqplot/jqplot.canvasTextRenderer
+    - jqplot/jqplot.dateAxisRenderer
