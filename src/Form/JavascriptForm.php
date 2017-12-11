@@ -124,10 +124,21 @@ class JavascriptForm extends ConfigFormBase
      */
     public function buildForm(array $form, FormStateInterface $form_state)
     {
-        $form['#theme'] = 'graph';
+
+        $form['db_change_wrapper']= [
+          '#type' => 'container',
+          '#attributes' => ['id' => 'db_change-wrapper'],
+        ];
+        $form['db_change_wrapper']['db_graph_wrapper'] = [
+          '#type' => 'container',
+          '#attributes' => ['id' => 'graph_chmi'],
+        ];
+
+
         $this->buildSelection($form, $form_state);
         $this->buildTable($form, $form_state);
         $this->buildGraph($form, $form_state);
+        // $form['#theme'] = 'graph';
         return $form;
     }
 
@@ -161,8 +172,8 @@ class JavascriptForm extends ConfigFormBase
             ),
             '#ajax' => array(
                 'callback' => '::change_db',
-                'wrapper' => 'graph_chmi',
-                'event' => 'change',
+                'wrapper' => 'db_change-wrapper',
+#                'event' => 'change',
                 'progress' => array(
                     'type' => 'throbber',
                     'message' => 'Update'
@@ -170,32 +181,34 @@ class JavascriptForm extends ConfigFormBase
             )
         );
         
-        $options_observable = array();
-        switch($this->tables->main_db)
-        {
-        	case 'hydro_main':
-        		$options_observable = array( 'temperature', 'altitude', 'flow');
-        		break;
-        	case 'meteo':
-        		$options_observable = array('temperature', 'pressure');
-        		break;
-        	default:
-        		assert(false, "Wrong option");
-        }
-        $form['observable_select'] = array(
-            '#type' => 'select',
-            '#title' => $this->t("Select observable"),
-            '#options' => $options_observable,
-            '#ajax' => array(
-                'callback' => '::change_graph',
-                'wrapper' => 'graph_chmi',
-                'event' => 'change',
-                'progress' => array(
-                    'type' => 'throbber',
-                    'message' => 'Update'
+            $options_observable = array();
+            $option = $form['db_select']['#options'][intval($form_state->getValue("db_select"))];
+
+            switch($option)
+            {
+                case 'hydro':
+                    $options_observable = array( 'temperature', 'altitude', 'flow');
+                    break;
+                case 'meteo':
+                    $options_observable = array('temperature', 'pressure');
+                    break;
+                default:
+                    assert(false, sprintf("Wrong option %s", $options_observable));
+            }
+            $form['db_change_wrapper']['observable_select'] = array(
+                '#type' => 'select',
+                '#title' => $this->t("Select observable"),
+                '#options' => $options_observable,
+                '#ajax' => array(
+                    'callback' => '::change_graph',
+                    'wrapper' => 'graph_chmi',
+                    'event' => 'change',
+                    'progress' => array(
+                        'type' => 'throbber',
+                        'message' => 'Update'
+                    )
                 )
-            )
-        );
+            );
     }
 
     private function buildTable(array& $form, FormStateInterface& $form_state)
@@ -245,7 +258,7 @@ class JavascriptForm extends ConfigFormBase
             $station_id = intval($form['station_select']['#options'][intval($station_select_id)]);
         }
         if (! empty($observable_select_id)) {
-            $observable = $form['observable_select']['#options'][$observable_select_id];
+            $observable = $form['db_change_wrapper']['observable_select']['#options'][$observable_select_id];
         }
         $resultData = $this->getStationData($station_id, $observable);
         $form['#attached']['drupalSettings']['graph_chmi']['station'] = $this->getStationName($station_id);
@@ -344,8 +357,8 @@ class JavascriptForm extends ConfigFormBase
         $station_select_id = intval($form_state->getValue('station_select'));
         $station_id = intval($form['station_select']['#options'][$station_select_id]);
 
-        $observable_select_id = $form_state->getValue('observable_select');
-        $observable = $form['observable_select']['#options'][$observable_select_id];
+        $observable_select_id = intval($form_state->getValue('observable_select'));
+        $observable = $form['db_change_wrapper']['observable_select']['#options'][$observable_select_id];
         $resultData = $this->getStationData($station_id, $observable);   
         
         $settings = array(
@@ -376,14 +389,16 @@ class JavascriptForm extends ConfigFormBase
 		}
 
         $schema = $this->database->schema();
-        assert(($schema->tableExists($this->tables->main_db) == true) 
-            && ($schema->tableExists($this->tables->station_db) == true), 
-            sprintf("Tables %s or %s not in database!", $this->tables->main_db, $this->tables->station_db));
-        $this->last_stations_data = $this->getLastStationsData();
+        // TODO BB: uncomment
+//         assert(($schema->tableExists($this->tables->main_db) == true) 
+//             && ($schema->tableExists($this->tables->station_db) == true), 
+//             sprintf("Tables %s or %s not in database!", $this->tables->main_db, $this->tables->station_db));
+//         $this->last_stations_data = $this->getLastStationsData();
 
-        $response = new AjaxResponse();
+//         $response = new AjaxResponse();
         /** TODO BB: */
-        return $response;
+        //return $response;
+        return $form['db_change_wrapper'];
   }
 
     /**
