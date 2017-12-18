@@ -69,7 +69,7 @@ class MeteoWorker extends ReportWorkerBase  {
     {
         $rawData = mb_convert_encoding($rawData, 'html-entities', 'utf-8');
         $domData = Html::load($rawData);
-    $domList = $domData->getElementsByTagName("div");
+        $domList = $domData->getElementsByTagName("div");
         foreach ($domList as $domStation) {
             if ($domStation->getAttribute('class') != 'meteostation') continue;
             $stationHref = $domStation->getElementsByTagName('a')->item(0)->getAttribute('href');

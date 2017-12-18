@@ -29,6 +29,12 @@
 				axesDefaults : {
 					labelRenderer : $.jqplot.CanvasAxisLabelRenderer
 				},
+				series: [{ 
+		            renderer: $.jqplot.OHLCRenderer,
+		            rendererOptions: {
+		                candleStick: true
+		            } 
+		        }], 
 				// An axes object holds options for all axes.
 				// Allowable axes are xaxis, x2axis, yaxis, y2axis, y3axis, ...
 				// Up to 9 y axes are supported.
@@ -55,7 +61,7 @@
 				},
 				cursor:{
 					show:	true,
-					zoom:	true
+					zoom:	true,
 				}
 			});
 			plotChmi.replot();

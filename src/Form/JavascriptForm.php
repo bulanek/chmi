@@ -11,6 +11,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\SettingsCommand;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Drupal\Core\Database\DatabaseException;
 const DB_MAIN_TABLE_NAME = 'hydro_main';
 const DB_STATION_TABLE_NAME = 'hydro_station';
 
@@ -50,8 +51,7 @@ function tablesort_difference(array & $stationData, string $field, string $sort)
  *            'asc' or 'desc' sort order.
  * @return bool True on success.
  */
-function tablesort_general(array & $stationData, string $field, string $sort)
-{
+function tablesort_general(array & $stationData, string $field, string $sort) {
     switch ($field) {
         case 'station':
             {
@@ -82,8 +82,7 @@ function tablesort_general(array & $stationData, string $field, string $sort)
  * This class uses the DescriptionTemplateTrait to display text we put in the
  * templates/description.html.twig file.
  */
-class JavascriptForm extends ConfigFormBase
-{
+class JavascriptForm extends ConfigFormBase {
     use DescriptionTemplateTrait;
     use StringTranslationTrait;
 
@@ -91,16 +90,15 @@ class JavascriptForm extends ConfigFormBase
     protected $tables;
     // Current station id
     protected $station_id;
-
     protected $last_stations_data;
 
-    function __construct()
-    {
+    function __construct() {
         $this->database = \Drupal::database();
         $this->station_id = 1;
         $this->tables = new \stdClass();
         $this->tables->main_db = TABLES[0][0];
         $this->tables->station_db = TABLES[0][1];
+        $this->last_stations_data = array();
         $schema = $this->database->schema();
 
         assert(($schema->tableExists(TABLES[0][0]) == true) 
@@ -109,7 +107,7 @@ class JavascriptForm extends ConfigFormBase
 //         assert(($schema->tableExists(TABLES[1][0]) == true) 
 //             && ($schema->tableExists(TABLES[1][1]) == true), 
 //             sprintf("Tables %s or %s not in database!", TABLES[1][0], TABLES[1][1]));
-        $this->last_stations_data = $this->getLastStationsData();
+        $this->last_stations_data[$this->tables->main_db] = $this->getLastStationsData();
     }
 
     /**
@@ -122,46 +120,28 @@ class JavascriptForm extends ConfigFormBase
      *
      * {@inheritdoc}
      */
-    public function buildForm(array $form, FormStateInterface $form_state)
-    {
-
-        $form['db_change_wrapper']= [
-          '#type' => 'container',
-          '#attributes' => ['id' => 'db_change-wrapper'],
+    public function buildForm(array $form, FormStateInterface $form_state) {
+//         $form['#theme'] = 'graph';
+        $form['db_change_wrapper'] = [
+            '#type' => 'container',
+            '#attributes' => [
+                'id' => 'db_change-wrapper'
+            ]
         ];
         $form['db_change_wrapper']['db_graph_wrapper'] = [
-          '#type' => 'container',
-          '#attributes' => ['id' => 'graph_chmi'],
+            '#type' => 'container',
+            '#attributes' => [
+                'id' => 'graph_chmi'],
         ];
-
 
         $this->buildSelection($form, $form_state);
         $this->buildTable($form, $form_state);
         $this->buildGraph($form, $form_state);
-        // $form['#theme'] = 'graph';
         return $form;
     }
 
-    private function buildSelection(array & $form, FormStateInterface & $form_state)
-    {
-        $sortedId = array_map(function ($stationData) {
-        return $stationData->station_id;
-        }, $this->last_stations_data);
-        sort($sortedId);
-        $form['station_select'] = array(
-            '#type' => 'select',
-            '#title' => $this->t("Select station"),
-            '#options' => $sortedId,
-            '#ajax' => array(
-                'callback' => '::change_graph',
-                'wrapper' => 'graph_chmi',
-                'event' => 'change',
-                'progress' => array(
-                    'type' => 'throbber',
-                    'message' => 'Update'
-                )
-            )
-        );
+    private function buildSelection(array & $form, FormStateInterface & $form_state) {
+        // TODO BB: optimize
 
         $form['db_select'] = array(
             '#type' => 'select',
@@ -180,59 +160,80 @@ class JavascriptForm extends ConfigFormBase
                 )
             )
         );
-        
-            $options_observable = array();
-            $option = $form['db_select']['#options'][intval($form_state->getValue("db_select"))];
 
-            switch($option)
-            {
-                case 'hydro':
-                    $options_observable = array( 'temperature', 'altitude', 'flow');
-                    break;
-                case 'meteo':
-                    $options_observable = array('temperature', 'pressure');
-                    break;
-                default:
-                    assert(false, sprintf("Wrong option %s", $options_observable));
-            }
-            $form['db_change_wrapper']['observable_select'] = array(
-                '#type' => 'select',
-                '#title' => $this->t("Select observable"),
-                '#options' => $options_observable,
-                '#ajax' => array(
-                    'callback' => '::change_graph',
-                    'wrapper' => 'graph_chmi',
-                    'event' => 'change',
-                    'progress' => array(
-                        'type' => 'throbber',
-                        'message' => 'Update'
-                    )
+		$db_select = intval ( $form_state->getValue('db_select'));
+        $db_name = $form['db_select']['#options'][$db_select];
+        $options_observable = array();
+
+		switch($db_name)
+		{
+			case 'hydro':
+				$this->tables->main_db = TABLES[0][0];
+				$this->tables->station_db = TABLES[0][1];
+                $options_observable = array( 'temperature', 'altitude', 'flow');
+
+				break;
+			case 'meteo':
+				$this->tables->main_db = TABLES[1][0];
+				$this->tables->station_db = TABLES[1][1];
+                $options_observable = array('temperature', 'pressure');
+
+				break;
+		}
+    
+        $sortedId = array_map(function ($stationData) {
+        return $stationData->station_id;
+        }, $this->last_stations_data[$this->tables->main_db]);
+        sort($sortedId);
+        $form['db_change_wrapper']['station_select'] = array(
+            '#type' => 'select',
+            '#title' => $this->t("Select station"),
+            '#options' => $sortedId,
+            '#ajax' => array(
+                'callback' => '::change_graph',
+                'wrapper' => 'graph_chmi',
+                'event' => 'change',
+                'progress' => array(
+                    'type' => 'throbber',
+                    'message' => 'Update'
                 )
-            );
+            )
+        );
+
+        $form['db_change_wrapper']['observable_select'] = array(
+            '#type' => 'select',
+            '#title' => $this->t("Select observable"),
+            '#options' => $options_observable,
+            '#ajax' => array(
+                'callback' => '::change_graph',
+                'wrapper' => 'graph_chmi',
+                'event' => 'change',
+                'progress' => array(
+                    'type' => 'throbber',
+                    'message' => 'Update'
+                )
+            )
+        );
     }
 
-    private function buildTable(array& $form, FormStateInterface& $form_state)
-    {
+    private function buildTable(array& $form, FormStateInterface& $form_state) {
         $header = array(
-            array( 'data' => $this->t('Id'), 'field' => 'station_id'),
-            array( 'data' => $this->t('Name'), 'field' => 'station', 'sort' => 'asc'),
+            array( 'data' => $this->t('Id')),//, 'field' => 'station_id'),
+            array( 'data' => $this->t('Name')),//  'field' => 'station'),
             array( 'data' => $this->t('Time')),
             array( 'data' => $this->t('Temperature')));
         
-        $order = tablesort_get_order($header);
-        $sort = tablesort_get_sort($header);
-        $output = tablesort_general($this->last_stations_data, $order['sql'], $sort);
-        assert($output);
         
         $form['station_table'] = array(
             '#type' => 'table',
             '#theme' => 'table',
+            '#attributes' => array('class' => array('tablesorter')),  
             '#caption' => $this->t("Station table with the last data"),
             '#header' => $header
         );
         
         $counter = 0;
-        foreach ($this->last_stations_data as $stationData) {
+        foreach ($this->last_stations_data[$this->tables->main_db] as $stationData) {
             $form['station_table'][$counter]['Id'] = array(
                 '#plain_text' => $stationData->station_id
             );
@@ -255,26 +256,32 @@ class JavascriptForm extends ConfigFormBase
         $station_id = 1;
         $observable = 'temperature';
         if (! empty($station_select_id)) {
-            $station_id = intval($form['station_select']['#options'][intval($station_select_id)]);
+            $station_id = intval($form['db_change_wrapper']['station_select']['#options'][intval($station_select_id)]);
         }
         if (! empty($observable_select_id)) {
             $observable = $form['db_change_wrapper']['observable_select']['#options'][$observable_select_id];
         }
         $resultData = $this->getStationData($station_id, $observable);
+        if (count($resultData->time) == 0) return;
         $form['#attached']['drupalSettings']['graph_chmi']['station'] = $this->getStationName($station_id);
         $form['#attached']['drupalSettings']['graph_chmi']['observable'] = $observable;
         $form['#attached']['drupalSettings']['graph_chmi']['time'] = $resultData->time;
         $form['#attached']['drupalSettings']['graph_chmi']['values'] = $resultData->values;
         
+        $form['#attached']['library'][] = 'chmi/tablesorter';
         $form['#attached']['library'][] = 'chmi/graph_chmi';
         $form['#attached']['library'][] = 'jqplot/jqplot.canvasAxisLabelRenderer';
         $form['#attached']['library'][] = 'jqplot/jqplot.canvasAxisTicksRenderer';
         $form['#attached']['library'][] = 'jqplot/jqplot.canvasTextRenderer';
         $form['#attached']['library'][] = 'jqplot/jqplot.dateAxisRenderer';
+        if (\Drupal::moduleHandler()->moduleExists('bootstrap_library')) {
+            $form['#attached']['library'][] = 'bootstrap_library/bootstrap';
+        }
     }
     
     /**
      * Get last recorded data for all stations.
+     * @note  Zero size array is returned in case of DatabaseException (e.g. no db table) as well.
      *
      * @return array Array of stdClass data for particular station.
      */
@@ -283,32 +290,37 @@ class JavascriptForm extends ConfigFormBase
         $stationId = 1;
         $stationData = NULL;
         
-        $query = $this->database->select($this->tables->main_db);
-        $query->addField($this->tables->main_db, "station_id");
-        $station_ids_query = $query->execute();
-        assert($station_ids_query != NULL);
-        
         $stations = array();
-        foreach ($station_ids_query as $station_id) {
-            $stationData = $this->getLastStationData($station_id->station_id);
-            if ($stationData->temperature == 0) {
+        try {
+            $query = $this->database->select($this->tables->main_db);
+            $query->addField($this->tables->main_db, "station_id");
+            $station_ids_query = $query->execute();
+            assert($station_ids_query != NULL);
+
+            foreach ($station_ids_query as $station_id) {
+                $stationData = $this->getLastStationData($station_id->station_id);
+                if ($stationData->temperature == 0) {
+                    ++$stationId;
+                    continue;
+                }
+                $stations[] = $stationData;
                 ++$stationId;
-                continue;
             }
-            $stations[] = $stationData;
-            ++$stationId;
+        } catch (DatabaseException $e) {
         }
         return $stations;
     }
 
   private function getStationName($stationId): string 
   {
+      $station = "";
       $query = $this->database->select($this->tables->main_db);
       $query->addField($this->tables->main_db, "station");
-	  $query->condition ( 'station_id', $stationId );
+      $query->condition ( 'station_id', $stationId );
       $result = $query->execute();
       assert($result != NULL);
-	  $station = $result->fetchField();
+      $station = $result->fetchField();
+
       return $station;     
   }
   
@@ -355,7 +367,7 @@ class JavascriptForm extends ConfigFormBase
   public function change_graph(array &$form, FormStateInterface& $form_state)
   {
         $station_select_id = intval($form_state->getValue('station_select'));
-        $station_id = intval($form['station_select']['#options'][$station_select_id]);
+        $station_id = intval($form['db_change_wrapper']['station_select']['#options'][$station_select_id]);
 
         $observable_select_id = intval($form_state->getValue('observable_select'));
         $observable = $form['db_change_wrapper']['observable_select']['#options'][$observable_select_id];
@@ -373,6 +385,7 @@ class JavascriptForm extends ConfigFormBase
 		$response->addCommand ( new SettingsCommand ( $settings ) );
 		return $response;
 	}
+
 	public function change_db(array &$form, FormStateInterface & $form_state) {
 		$db_select = intval ( $form_state->getValue('db_select'));
         $db_name = $form['db_select']['#options'][$db_select];
@@ -393,7 +406,9 @@ class JavascriptForm extends ConfigFormBase
 //         assert(($schema->tableExists($this->tables->main_db) == true) 
 //             && ($schema->tableExists($this->tables->station_db) == true), 
 //             sprintf("Tables %s or %s not in database!", $this->tables->main_db, $this->tables->station_db));
-//         $this->last_stations_data = $this->getLastStationsData();
+        if (!array_key_exists($this->tables->main_db, $this->last_stations_data)) {
+            $this->last_stations_data[$this->tables->main_db] = $this->getLastStationsData();
+        }
 
 //         $response = new AjaxResponse();
         /** TODO BB: */
@@ -402,34 +417,36 @@ class JavascriptForm extends ConfigFormBase
   }
 
     /**
-     *
+     * 
      * @param int $stationId
      *            Id of chmi station.
      * @param string $observable
      *            Data to check (temperature, altitude, flow).
-     * @return \stdClass stdClass of data (->time, ->{$observable}).
+     * @return \stdClass stdClass of array data (->time, ->{$observable}).
+     * @retval  Zero size array in case of $see DatabaseException.
      */
-    private function getStationData(int $stationId, string& $observable): \stdClass
-    {
+    private function getStationData(int $stationId, string& $observable): \stdClass {
         $resultData = NULL;
         $stationTableName = $this->tables->station_db;
-        $query = $this->database->select($stationTableName);
-        $query->addField($stationTableName, 'time');
-        $query->addField($stationTableName, $observable);
-        $query->condition('station_id', $stationId);
-//         $query->condition($observable, '0', '!=');
-        $result = $query->execute();
-        assert($result != NULL);
         $outData = new \stdClass();
         $outData->time = array();
         $outData->values = array();
-        foreach ($result as $tempTime)
-        {
-            $outData->time[] = $tempTime->time;
-            $outData->values[] = $tempTime->{$observable};
-        }
+        try {
+            $query = $this->database->select($stationTableName);
+            $query->addField($stationTableName, 'time');
+            $query->addField($stationTableName, $observable);
+            $query->condition('station_id', $stationId);
+            $result = $query->execute();
+            assert($result != NULL);
+            $outData->time = array();
+            $outData->values = array();
+            foreach ($result as $tempTime) {
+                $outData->time[] = $tempTime->time;
+                $outData->values[] = $tempTime->{$observable};
+            }
+        } catch (DatabaseException $e) {}
         return $outData;
-  }
+    }
 
    /**
    * {@inheritdoc}
