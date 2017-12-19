@@ -65,18 +65,6 @@ return [
 
 function chmi_preprocess_page() {
     if (\Drupal::moduleHandler()->moduleExists('bootstrap_library')) {
-        $library = theme_get_setting('bootstrap_barrio_library');
-        switch ($library) {
-            case 'cdn' :
-                $variables['#attached']['library'][] = 'bootstrap_library/bootstrap-cdn';
-                break;
-            case 'production':
-                $variables['#attached']['library'][] = 'bootstrap_library/bootstrap';
-                break;
-            case 'development':
-                $variables['#attached']['library'][] = 'bootstrap_library/bootstrap-dev';
-                break;
-        }
     }
     else {
         $debug = 1;
@@ -84,13 +72,9 @@ function chmi_preprocess_page() {
 }
 function chmi_page_attachments(array &$attachments) {
   // Unconditionally attach an asset to the page.
-  $attachments['#attached']['library'][] = 'bootstrap_library/bootstrap';
+//   $attachments['#attached']['library'][] = 'bootstrap_library/bootstrap';
 }
 
-function hook_page_attachments(array &$attachments) {
-  // Unconditionally attach an asset to the page.
-  $attachments['#attached']['library'][] = 'bootstrap_library/bootstrap';
-}
 
 /**
  * @} End of "defgroup cron_example".

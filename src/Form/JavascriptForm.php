@@ -1,10 +1,7 @@
 <?php
-
 namespace Drupal\chmi\Form;
 
 use Drupal\examples\Utility\DescriptionTemplateTrait;
-// use const Drupal\cron_example\Plugin\QueueWorker\DB_MAIN_TABLE_NAME;
-// use const Drupal\cron_example\Plugin\QueueWorker\DB_STATION_TABLE_NAME;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -12,69 +9,18 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\SettingsCommand;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Drupal\Core\Database\DatabaseException;
-const DB_MAIN_TABLE_NAME = 'hydro_main';
-const DB_STATION_TABLE_NAME = 'hydro_station';
+use Drupal\chmi\Plugin\Database;
 
-const TABLES = [['hydro_main', 'hydro_station'], ['meteo_main', 'meteo_station']];
+const TABLES = [[Database::HYDRO_DB_MAIN_TABLE_NAME, Database::HYDRO_DB_STATION_TABLE_NAME],
+            [Database::METEO_DB_MAIN_TABLE_NAME, Database::METEO_DB_STATION_TABLE_NAME]];
 
 function assert_access_denied($file, $line, $code, $desc = null )
 {
     printf("Error occured, $file ($line), $code\n");
-    
     throw new AccessDeniedHttpException("Assert failed");
 }
 
 assert_options(ASSERT_CALLBACK, 'assert_access_denied');
-
-function tablesort_difference(array & $stationData, string $field, string $sort)
-{
-    if ($sort == 'asc') {
-        return uasort($stationData, function ($a, $b, $field) {
-            return $a->{$field} - $b->{$field};
-        });
-    } else {
-        return uasort($stationData, function ($a, $b, $field) {
-            return $b->{$field} - $a->{$field};
-        });
-    }
-}
-
-/**
- * Sort the table with chmi data.
- * Sorted by id and name.
- *
- * @param array $stationData
- *            Array of data to be sorted.
- * @param string $field
- *            What to sort.
- * @param string $sort
- *            'asc' or 'desc' sort order.
- * @return bool True on success.
- */
-function tablesort_general(array & $stationData, string $field, string $sort) {
-    switch ($field) {
-        case 'station':
-            {
-                if ($sort == 'asc') {
-                    return uasort($stationData, function ($a, $b) {
-                        return strnatcasecmp($a->station, $b->station);
-                    });
-                } else {
-                    return uasort($stationData, function ($a, $b) {
-                        return strnatcasecmp($b->station, $a->station);
-                    });
-                }
-                break;
-            }
-        case 'station_id':
-        case 'temperature':
-        case 'time':
-            return tablesort_difference($stationData, $field, $sort);
-            break;
-        default:
-            assert(false, sprintf("Case %s not implemented", $field));
-    }
-}
 
 /**
  * Controller for Hooks example description page.
@@ -121,7 +67,7 @@ class JavascriptForm extends ConfigFormBase {
      * {@inheritdoc}
      */
     public function buildForm(array $form, FormStateInterface $form_state) {
-//         $form['#theme'] = 'graph';
+//        $form['#theme'] = 'graph';
         $form['db_change_wrapper'] = [
             '#type' => 'container',
             '#attributes' => [
@@ -141,7 +87,6 @@ class JavascriptForm extends ConfigFormBase {
     }
 
     private function buildSelection(array & $form, FormStateInterface & $form_state) {
-        // TODO BB: optimize
 
         $form['db_select'] = array(
             '#type' => 'select',
@@ -153,7 +98,6 @@ class JavascriptForm extends ConfigFormBase {
             '#ajax' => array(
                 'callback' => '::change_db',
                 'wrapper' => 'db_change-wrapper',
-#                'event' => 'change',
                 'progress' => array(
                     'type' => 'throbber',
                     'message' => 'Update'
@@ -180,15 +124,18 @@ class JavascriptForm extends ConfigFormBase {
 
 				break;
 		}
-    
-        $sortedId = array_map(function ($stationData) {
+
+        if (!array_key_exists($this->tables->main_db, $this->last_stations_data)) {
+            $this->last_stations_data[$this->tables->main_db] = $this->getLastStationsData();
+        }
+
+        $tableId = array_map(function ($stationData) {
         return $stationData->station_id;
         }, $this->last_stations_data[$this->tables->main_db]);
-        sort($sortedId);
         $form['db_change_wrapper']['station_select'] = array(
             '#type' => 'select',
             '#title' => $this->t("Select station"),
-            '#options' => $sortedId,
+            '#options' => $tableId,
             '#ajax' => array(
                 'callback' => '::change_graph',
                 'wrapper' => 'graph_chmi',
@@ -218,8 +165,8 @@ class JavascriptForm extends ConfigFormBase {
 
     private function buildTable(array& $form, FormStateInterface& $form_state) {
         $header = array(
-            array( 'data' => $this->t('Id')),//, 'field' => 'station_id'),
-            array( 'data' => $this->t('Name')),//  'field' => 'station'),
+            array( 'data' => $this->t('Id')),
+            array( 'data' => $this->t('Name')),
             array( 'data' => $this->t('Time')),
             array( 'data' => $this->t('Temperature')));
         
@@ -227,11 +174,10 @@ class JavascriptForm extends ConfigFormBase {
         $form['station_table'] = array(
             '#type' => 'table',
             '#theme' => 'table',
-            '#attributes' => array('class' => array('tablesorter')),  
+#            '#attributes' => array('class' => array('tablesorter')),  
             '#caption' => $this->t("Station table with the last data"),
             '#header' => $header
         );
-        
         $counter = 0;
         foreach ($this->last_stations_data[$this->tables->main_db] as $stationData) {
             $form['station_table'][$counter]['Id'] = array(
@@ -248,6 +194,7 @@ class JavascriptForm extends ConfigFormBase {
             );
             ++$counter;
         }
+        $form['#attached']['library'][] = 'chmi/tablesorter';
     }
     
 
@@ -268,15 +215,11 @@ class JavascriptForm extends ConfigFormBase {
         $form['#attached']['drupalSettings']['graph_chmi']['time'] = $resultData->time;
         $form['#attached']['drupalSettings']['graph_chmi']['values'] = $resultData->values;
         
-        $form['#attached']['library'][] = 'chmi/tablesorter';
         $form['#attached']['library'][] = 'chmi/graph_chmi';
         $form['#attached']['library'][] = 'jqplot/jqplot.canvasAxisLabelRenderer';
         $form['#attached']['library'][] = 'jqplot/jqplot.canvasAxisTicksRenderer';
         $form['#attached']['library'][] = 'jqplot/jqplot.canvasTextRenderer';
         $form['#attached']['library'][] = 'jqplot/jqplot.dateAxisRenderer';
-        if (\Drupal::moduleHandler()->moduleExists('bootstrap_library')) {
-            $form['#attached']['library'][] = 'bootstrap_library/bootstrap';
-        }
     }
     
     /**

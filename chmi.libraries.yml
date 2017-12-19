@@ -4,14 +4,13 @@ tablesorter:
   title: TableSorter library
   version: 1.0.0
   js: 
+    /libraries/tablesorter/jquery-latest.js: {}
     /libraries/tablesorter/jquery.tablesorter.min.js: {}
     /libraries/tablesorter/jquery.metadata.js: {}
-    /libraries/tablesorter/addons/pager/jquery.tablesorter.pager.js: {}
     js/table_sorter.js: {}
   css:
     theme:
-      /libraries/tablesorter/themes/blue/style.css
-      /libraries/tablesorter/addons/pager/jquery.tablesorter.pager.css
+      /libraries/tablesorter/themes/blue/style.css: {}
   dependencies:
     - core/jquery
     - core/drupalSettings
@@ -29,4 +28,3 @@ graph_chmi:
     - jqplot/jqplot.canvasAxisTicksRenderer
     - jqplot/jqplot.canvasTextRenderer
     - jqplot/jqplot.dateAxisRenderer
-    - bootstrap_library/bootstrap
