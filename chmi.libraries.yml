@@ -4,13 +4,23 @@ tablesorter:
   title: TableSorter library
   version: 1.0.0
   js: 
-    /libraries/tablesorter/jquery-latest.js: {}
-    /libraries/tablesorter/jquery.tablesorter.min.js: {}
-    /libraries/tablesorter/jquery.metadata.js: {}
+#    /libraries/tablesorter/jquery-latest.js: {}
+    /libraries/tablesorter/js/jquery.tablesorter.js: {}
+    /libraries/tablesorter/js/jquery.tablesorter.widgets.js: {}
+    /libraries/tablesorter/addons/pager/jquery.tablesorter.pager.js: {}
+    /libraries/tablesorter/js/widgets/widget-pager.js: {}
+    /libraries/tablesorter/js/widgets/widget-storage.js: {}
     js/table_sorter.js: {}
   css:
     theme:
-      /libraries/tablesorter/themes/blue/style.css: {}
+      /libraries/tablesorter/css/theme.blue.css: {}
+      /libraries/tablesorter/addons/pager/jquery.tablesorter.pager.css: {}
+      css/table_sorter.css: {}
+  files:
+     /libraries/tablesorter/addons/pager/first.png: {}
+     /libraries/tablesorter/addons/pager/last.png: {}
+     /libraries/tablesorter/addons/pager/next.png: {}
+     /libraries/tablesorter/addons/pager/prev.png: {}
   dependencies:
     - core/jquery
     - core/drupalSettings

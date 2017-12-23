@@ -1,7 +1,6 @@
 <?php
 namespace Drupal\chmi\Form;
 
-use Drupal\examples\Utility\DescriptionTemplateTrait;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -14,8 +13,7 @@ use Drupal\chmi\Plugin\Database;
 const TABLES = [[Database::HYDRO_DB_MAIN_TABLE_NAME, Database::HYDRO_DB_STATION_TABLE_NAME],
             [Database::METEO_DB_MAIN_TABLE_NAME, Database::METEO_DB_STATION_TABLE_NAME]];
 
-function assert_access_denied($file, $line, $code, $desc = null )
-{
+function assert_access_denied($file, $line, $code, $desc = null ) {
     printf("Error occured, $file ($line), $code\n");
     throw new AccessDeniedHttpException("Assert failed");
 }
@@ -29,7 +27,6 @@ assert_options(ASSERT_CALLBACK, 'assert_access_denied');
  * templates/description.html.twig file.
  */
 class JavascriptForm extends ConfigFormBase {
-    use DescriptionTemplateTrait;
     use StringTranslationTrait;
 
     protected $database;
@@ -109,8 +106,7 @@ class JavascriptForm extends ConfigFormBase {
         $db_name = $form['db_select']['#options'][$db_select];
         $options_observable = array();
 
-		switch($db_name)
-		{
+		switch($db_name) {
 			case 'hydro':
 				$this->tables->main_db = TABLES[0][0];
 				$this->tables->station_db = TABLES[0][1];
@@ -170,11 +166,10 @@ class JavascriptForm extends ConfigFormBase {
             array( 'data' => $this->t('Time')),
             array( 'data' => $this->t('Temperature')));
         
-        
         $form['station_table'] = array(
             '#type' => 'table',
             '#theme' => 'table',
-#            '#attributes' => array('class' => array('tablesorter')),  
+            '#attributes' => array('class' => array('tablesorter')),  
             '#caption' => $this->t("Station table with the last data"),
             '#header' => $header
         );
@@ -197,7 +192,6 @@ class JavascriptForm extends ConfigFormBase {
         $form['#attached']['library'][] = 'chmi/tablesorter';
     }
     
-
     private function buildGraph(array& $form, FormStateInterface& $form_state)
     {
         $station_id = 1;
@@ -228,8 +222,7 @@ class JavascriptForm extends ConfigFormBase {
      *
      * @return array Array of stdClass data for particular station.
      */
-    private function getLastStationsData(): array
-    {
+    private function getLastStationsData(): array {
         $stationId = 1;
         $stationData = NULL;
         
@@ -254,8 +247,7 @@ class JavascriptForm extends ConfigFormBase {
         return $stations;
     }
 
-  private function getStationName($stationId): string 
-  {
+  private function getStationName($stationId): string {
       $station = "";
       $query = $this->database->select($this->tables->main_db);
       $query->addField($this->tables->main_db, "station");
@@ -273,8 +265,7 @@ class JavascriptForm extends ConfigFormBase {
    * @param int $stationId		
    * @return \stdClass		
    */
-  private function getLastStationData(int $stationId): \stdClass
-  {
+  private function getLastStationData(int $stationId): \stdClass {
 		$stationTable = $this->tables->station_db;
         $query = $this->database->select($stationTable);
         $query->addExpression('MAX(time)');
@@ -307,8 +298,7 @@ class JavascriptForm extends ConfigFormBase {
         return $resultData;     
   }
 
-  public function change_graph(array &$form, FormStateInterface& $form_state)
-  {
+  public function change_graph(array &$form, FormStateInterface& $form_state) {
         $station_select_id = intval($form_state->getValue('station_select'));
         $station_id = intval($form['db_change_wrapper']['station_select']['#options'][$station_select_id]);
 
@@ -394,8 +384,7 @@ class JavascriptForm extends ConfigFormBase {
    /**
    * {@inheritdoc}
    */
-   protected function getEditableConfigNames()
-    {}
+   protected function getEditableConfigNames() {}
 
    /**
    * {@inheritdoc}
@@ -403,5 +392,3 @@ class JavascriptForm extends ConfigFormBase {
    protected function getModuleName()
     {return "chmi";}
 }
-
-
