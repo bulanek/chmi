@@ -7,6 +7,27 @@
   Drupal.behaviors.tablesorter = {
     attach: function once(context, settings) {
       $('.tablesorter').each(function (idx, table) {
+    	  if ($(".pager").length == 0){
+		   $(table).find("thead").prepend(
+				  `
+				  <tr class=\"tablesorter-ignoreRow\">
+					 <td class="pager" colspan=\"4\">
+						   <img id="tablesorterPagerFirst" class="first" src="./modules/custom/chmi/icons/first.png"/>
+						   <img id="tablesorterPagerPrev" class="prev" src="./modules/custom/chmi/icons/prev.png"/>
+						 <span class=\"pagedisplay\"></span> 
+						   <img id="tablesorterPagerNext" class="next" src="./modules/custom/chmi/icons/next.png"/>
+						   <img id="tablesorterPagerLast" class="last" src="./modules/custom/chmi/icons/last.png"/>
+						 <select class=\"pagesize\">
+							 <option value=\"20\">20</option>
+							 <option value=\"30\">30</option>
+							 <option value=\"40\">40</option>
+						 </select>
+						 <select class="gotoPage" title="Select page number"></select>
+					 </td>
+				   </tr>
+				   `
+				  );
+    	  }
     	    // extend the default setting to always include the zebra widget.
     	    // call the tablesorter plugin
     	  	$(table).tablesorter({
@@ -17,6 +38,15 @@
 				  widgets: ['zebra', 'filter'],	
     	  	}
     	  	)
+    	  	// bind to pager events
+			// *********************
+			.bind('pagerChange pagerComplete pagerInitialized pageMoved', function(e, c){
+			  var msg = '"</span> event triggered, ' + (e.type === 'pagerChange' ? 'going to' : 'now on') +
+				' page <span class="typ">' + (c.page + 1) + '/' + c.totalPages + '</span>';
+			  $('#display')
+				.append('<li><span class="str">"' + e.type + msg + '</li>')
+				.find('li:first').remove();
+			})
     	  	.tablesorterPager({
     	  	  container: $(".pager"),
 
@@ -63,20 +93,20 @@
               cssDisabled    : 'disabled', // Note there is no period "." in front of this class name
               cssErrorRow    : 'tablesorter-errorRow' // error information row
     	  		});
-    	  	 $(table).find("thead").prepend(
-    	  	        `<tr class=\"tablesorter-ignoreRow\">
-                         <td class=\"pager\" colspan=\"5\">
-    	  	                 <img src="../addons/pager/icons/first.png" class="first"/>
-    	  	                 <img src="../addons/pager/icons/prev.png" class="prev"/>
-                             <span class=\"pagedisplay\"></span> 
-                             <img src="../addons/pager/icons/next.png" class="next"/>
-    	  	                 <img src="../addons/pager/icons/last.png" class="last"/>
-                             <select class=\"pagesize\">
-                                 <option value=\"25\">25</option>
-                             </select>
-                         </td>
-    	  	         </tr>`
-    	  	        );
+    	  	// clear storage (page & size)
+			$('.clear-pager-data').click(function(){
+			  // clears user set page & size from local storage, so on page
+			  // reload the page & size resets to the original settings
+			  $.tablesorter.storage( $('table'), 'tablesorter-pager', '' );
+			});
+
+			// go to page 1 showing 10 rows
+			$('.goto').click(function(){
+			  // triggering "pageAndSize" without parameters will reset the
+			  // pager to page 1 and the original set size (10 by default)
+			  // $('table').trigger('pageAndSize')
+			  $('table').trigger('pageAndSize', [1, 10]);
+			});
       });
     }
   };

@@ -26,6 +26,23 @@ td.pager {
   z-index: 1000;
 }
 
+#tablesorterPagerNext {
+	background: url(../icons/next.png) center no-repeat;
+}
+
+#tablesorterPagerPrev {
+	background: url(../icons/prev.png) center no-repeat;
+}
+
+#tablesorterPagerFirst {
+	background: url(../icons/first.png) center no-repeat;
+}
+
+#tablesorterPagerLast {
+	background: url(../icons/last.png) center no-repeat;
+}
+
+
 /*** css used when "updateArrows" option is true ***/
 /* the pager itself gets a disabled class when the number of rows is less than the size */
 .pager.disabled {
