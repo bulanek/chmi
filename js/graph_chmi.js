@@ -16,7 +16,18 @@
 			for (i = 0; i < values.length; i++) {
 				data.push([ time[i] * 1000, values[i] ]);
 			}
-
+			
+			// If js run due to change of db, change options of select station ids here due to BUG
+			// in Drupal https://www.drupal.org/project/drupal/issues/736066
+			if (typeof settings.stationsId !== 'undefined') {
+			    $("select[id='station_select_id'] > option").remove();
+			    var appendOptions = "";
+			    for (var i = 0; i < settings.stationsId.length; i++) {
+                    appendOptions += "<option value="+i+">"+settings.stationsId[i]+"</option>\n";
+                }
+			    $("select[id='station_select_id']").append(appendOptions);
+            }
+         
 			// The following plot uses a number of options to set the title,
 			// add axis labels, and shows how to use the canvasAxisLabelRenderer
 			// plugin to provide rotated axis labels.

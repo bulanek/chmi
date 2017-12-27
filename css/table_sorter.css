@@ -26,6 +26,8 @@ td.pager {
   z-index: 1000;
 }
 
+
+/* 
 #tablesorterPagerNext {
 	background: url(../icons/next.png) center no-repeat;
 }
@@ -41,6 +43,7 @@ td.pager {
 #tablesorterPagerLast {
 	background: url(../icons/last.png) center no-repeat;
 }
+*/
 
 
 /*** css used when "updateArrows" option is true ***/

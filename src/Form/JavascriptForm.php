@@ -9,6 +9,12 @@ use Drupal\Core\Ajax\SettingsCommand;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Drupal\Core\Database\DatabaseException;
 use Drupal\chmi\Plugin\Database;
+use Drupal\Core\Render\Renderer;
+use Drupal\Core\Ajax\ReplaceCommand;
+use Drupal\Core\Ajax\UpdateBuildIdCommand;
+use Drupal\Core\Ajax\InsertCommand;
+use Drupal\Core\Ajax\RemoveCommand;
+use Drupal\Core\Ajax\AppendCommand;
 
 const TABLES = [[Database::HYDRO_DB_MAIN_TABLE_NAME, Database::HYDRO_DB_STATION_TABLE_NAME],
             [Database::METEO_DB_MAIN_TABLE_NAME, Database::METEO_DB_STATION_TABLE_NAME]];
@@ -47,9 +53,9 @@ class JavascriptForm extends ConfigFormBase {
         assert(($schema->tableExists(TABLES[0][0]) == true) 
             && ($schema->tableExists(TABLES[0][1]) == true), 
             sprintf("Tables %s or %s not in database!", TABLES[0][0], TABLES[0][1]));
-//         assert(($schema->tableExists(TABLES[1][0]) == true) 
-//             && ($schema->tableExists(TABLES[1][1]) == true), 
-//             sprintf("Tables %s or %s not in database!", TABLES[1][0], TABLES[1][1]));
+        assert(($schema->tableExists(TABLES[1][0]) == true) 
+            && ($schema->tableExists(TABLES[1][1]) == true), 
+            sprintf("Tables %s or %s not in database!", TABLES[1][0], TABLES[1][1]));
         $this->last_stations_data[$this->tables->main_db] = $this->getLastStationsData();
     }
 
@@ -64,7 +70,7 @@ class JavascriptForm extends ConfigFormBase {
      * {@inheritdoc}
      */
     public function buildForm(array $form, FormStateInterface $form_state) {
-//        $form['#theme'] = 'graph';
+        $form['#theme'] = 'graph';
         $form['db_change_wrapper'] = [
             '#type' => 'container',
             '#attributes' => [
@@ -94,7 +100,6 @@ class JavascriptForm extends ConfigFormBase {
             ),
             '#ajax' => array(
                 'callback' => '::change_db',
-                'wrapper' => 'db_change-wrapper',
                 'progress' => array(
                     'type' => 'throbber',
                     'message' => 'Update'
@@ -131,10 +136,10 @@ class JavascriptForm extends ConfigFormBase {
         $form['db_change_wrapper']['station_select'] = array(
             '#type' => 'select',
             '#title' => $this->t("Select station"),
+            '#id' => 'station_select_id',
             '#options' => $tableId,
             '#ajax' => array(
                 'callback' => '::change_graph',
-                'wrapper' => 'graph_chmi',
                 'event' => 'change',
                 'progress' => array(
                     'type' => 'throbber',
@@ -146,6 +151,7 @@ class JavascriptForm extends ConfigFormBase {
         $form['db_change_wrapper']['observable_select'] = array(
             '#type' => 'select',
             '#title' => $this->t("Select observable"),
+            '#id' => 'observable_select_id',
             '#options' => $options_observable,
             '#ajax' => array(
                 'callback' => '::change_graph',
@@ -166,25 +172,25 @@ class JavascriptForm extends ConfigFormBase {
             array( 'data' => $this->t('Time')),
             array( 'data' => $this->t('Temperature')));
         
-        $form['station_table'] = array(
+        $form['db_change_wrapper']['station_table'] = array(
             '#type' => 'table',
             '#theme' => 'table',
-            '#attributes' => array('class' => array('tablesorter')),  
+            '#attributes' => array('class' => array('tablesorter'), 'id' => array('station_table')),  
             '#caption' => $this->t("Station table with the last data"),
             '#header' => $header
         );
         $counter = 0;
         foreach ($this->last_stations_data[$this->tables->main_db] as $stationData) {
-            $form['station_table'][$counter]['Id'] = array(
+            $form['db_change_wrapper']['station_table'][$counter]['Id'] = array(
                 '#plain_text' => $stationData->station_id
             );
-            $form['station_table'][$counter]['Name'] = array(
+            $form['db_change_wrapper']['station_table'][$counter]['Name'] = array(
                 '#plain_text' => $stationData->station
             );
-            $form['station_table'][$counter]['Date and time'] = array(
+            $form['db_change_wrapper']['station_table'][$counter]['Date and time'] = array(
                 '#plain_text' => strftime("%d.%m.%Y %H:%m", $stationData->time)
             );
-            $form['station_table'][$counter]['Temperature'] = array(
+            $form['db_change_wrapper']['station_table'][$counter]['Temperature'] = array(
                 '#plain_text' => $stationData->temperature
             );
             ++$counter;
@@ -335,18 +341,45 @@ class JavascriptForm extends ConfigFormBase {
 		}
 
         $schema = $this->database->schema();
-        // TODO BB: uncomment
-//         assert(($schema->tableExists($this->tables->main_db) == true) 
-//             && ($schema->tableExists($this->tables->station_db) == true), 
-//             sprintf("Tables %s or %s not in database!", $this->tables->main_db, $this->tables->station_db));
+
+        assert(($schema->tableExists($this->tables->main_db) == true) 
+            && ($schema->tableExists($this->tables->station_db) == true), 
+            sprintf("Tables %s or %s not in database!", $this->tables->main_db, $this->tables->station_db));
         if (!array_key_exists($this->tables->main_db, $this->last_stations_data)) {
             $this->last_stations_data[$this->tables->main_db] = $this->getLastStationsData();
         }
 
-//         $response = new AjaxResponse();
-        /** TODO BB: */
-        //return $response;
-        return $form['db_change_wrapper'];
+        
+        $station_select_id = intval($form_state->getValue('station_select'));
+        $station_id = intval($form['db_change_wrapper']['station_select']['#options'][$station_select_id]);
+
+        $observable_select_id = intval($form_state->getValue('observable_select'));
+        $observable = $form['db_change_wrapper']['observable_select']['#options'][$observable_select_id];
+        $resultData = $this->getStationData($station_id, $observable);   
+        
+        $settings = array(
+            'graph_chmi' => array(
+                'station' => $this->getStationName($station_id),
+                'time' => $resultData->time,
+                'values' => $resultData->values,
+                'observable' => $observable
+            ),
+            'stationsId' => $form['db_change_wrapper']['station_select']['#options'],
+        );
+        $response = new AjaxResponse();
+        $response->addCommand(new SettingsCommand($settings));
+        $response->addCommand(new ReplaceCommand('#station_table', $form['db_change_wrapper']['station_table']));
+// //      NOTE BB: BUG https://www.drupal.org/project/drupal/issues/736066
+
+        $response->addCommand(new RemoveCommand("select[id='observable_select_id'] > option"));
+        $options = $form['db_change_wrapper']['observable_select']["#options"];
+        $length = count($options);
+        for($i=0;$i<count($options);++$i)
+         {
+             $response->addCommand(new AppendCommand("select[id='observable_select_id']","<option value=$i>$options[$i]</option>"));
+         }
+        $response->addCommand(new UpdateBuildIdCommand($form["#build_id_old"], $form["#build_id"]), TRUE);
+		return $response;
   }
 
     /**
