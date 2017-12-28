@@ -38,3 +38,4 @@ graph_chmi:
     - jqplot/jqplot.canvasAxisTicksRenderer
     - jqplot/jqplot.canvasTextRenderer
     - jqplot/jqplot.dateAxisRenderer
+    - jqplot/jqplot.cursor

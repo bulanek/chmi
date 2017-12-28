@@ -220,6 +220,7 @@ class JavascriptForm extends ConfigFormBase {
         $form['#attached']['library'][] = 'jqplot/jqplot.canvasAxisTicksRenderer';
         $form['#attached']['library'][] = 'jqplot/jqplot.canvasTextRenderer';
         $form['#attached']['library'][] = 'jqplot/jqplot.dateAxisRenderer';
+        $form['#attached']['library'][] = 'jqplot/jqplot.cursor';
     }
     
     /**
@@ -365,19 +366,19 @@ class JavascriptForm extends ConfigFormBase {
                 'observable' => $observable
             ),
             'stationsId' => $form['db_change_wrapper']['station_select']['#options'],
+            'observables' => $form['db_change_wrapper']['observable_select']['#options'],
         );
         $response = new AjaxResponse();
         $response->addCommand(new SettingsCommand($settings));
         $response->addCommand(new ReplaceCommand('#station_table', $form['db_change_wrapper']['station_table']));
-// //      NOTE BB: BUG https://www.drupal.org/project/drupal/issues/736066
-
-        $response->addCommand(new RemoveCommand("select[id='observable_select_id'] > option"));
-        $options = $form['db_change_wrapper']['observable_select']["#options"];
-        $length = count($options);
-        for($i=0;$i<count($options);++$i)
-         {
-             $response->addCommand(new AppendCommand("select[id='observable_select_id']","<option value=$i>$options[$i]</option>"));
-         }
+// NOTE BB: BUG https://www.drupal.org/project/drupal/issues/736066
+//         $response->addCommand(new RemoveCommand("select[id='observable_select_id'] > option"));
+//         $options = $form['db_change_wrapper']['observable_select']["#options"];
+//         $length = count($options);
+//         for($i=0;$i<count($options);++$i)
+//          {
+//              $response->addCommand(new AppendCommand("select[id='observable_select_id']","<option value=$i>$options[$i]</option>"));
+//          }
         $response->addCommand(new UpdateBuildIdCommand($form["#build_id_old"], $form["#build_id"]), TRUE);
 		return $response;
   }

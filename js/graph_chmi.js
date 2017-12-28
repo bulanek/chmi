@@ -17,64 +17,76 @@
 				data.push([ time[i] * 1000, values[i] ]);
 			}
 			
-			// If js run due to change of db, change options of select station ids here due to BUG
-			// in Drupal https://www.drupal.org/project/drupal/issues/736066
-			if (typeof settings.stationsId !== 'undefined') {
-			    $("select[id='station_select_id'] > option").remove();
-			    var appendOptions = "";
-			    for (var i = 0; i < settings.stationsId.length; i++) {
-                    appendOptions += "<option value="+i+">"+settings.stationsId[i]+"</option>\n";
+            // If js run due to change of db, change options of
+            // select station ids here due to BUG
+            // in Drupal https://www.drupal.org/project/drupal/issues/736066
+            if (typeof settings.stationsId !== 'undefined') {
+                $("select[id='station_select_id'] > option").remove();
+                var appendOptions = "";
+                for (var i = 0; i < settings.stationsId.length; i++) {
+                    appendOptions += "<option value=" + i + ">" + settings.stationsId[i] + "</option>\n";
                 }
-			    $("select[id='station_select_id']").append(appendOptions);
+                $("select[id='station_select_id']").append(appendOptions);
+            }
+
+            if (typeof settings.observables !== 'undefined') {
+                $("select[id='observable_select_id'] > option").remove();
+                var appendOptions = "";
+                for (var i = 0; i < settings.observables.length; i++) {
+                    appendOptions += "<option value=" + i + ">" + settings.observables[i] + "</option>\n";
+                }
+                $("select[id='observable_select_id']").append(appendOptions);
             }
          
-			// The following plot uses a number of options to set the title,
-			// add axis labels, and shows how to use the canvasAxisLabelRenderer
-			// plugin to provide rotated axis labels.
-			var plotChmi = $.jqplot('graph_chmi', [ data ], {
-				// Give the plot a title.
-				title : 'Station: ' + station,
-				// You can specify options for all axes on the plot at once with
-				// the axesDefaults object. Here, we're using a canvas renderer
-				// to draw the axis label which allows rotated text.
-				axesDefaults : {
-					labelRenderer : $.jqplot.CanvasAxisLabelRenderer
-				},
-				series: [{ 
-		            renderer: $.jqplot.OHLCRenderer,
-		            rendererOptions: {
-		                candleStick: true
-		            } 
-		        }], 
-				// An axes object holds options for all axes.
-				// Allowable axes are xaxis, x2axis, yaxis, y2axis, y3axis, ...
-				// Up to 9 y axes are supported.
-				axes : {
-					// options for each axis are specified in seperate option
-					// objects.
-					xaxis : {
-						label : "Date",
-						renderer : $.jqplot.DateAxisRenderer,
-						rendererOptions : {
-							tickRenderer : $.jqplot.CanvasAxisTickRenderer,
-						},
-						tickOptions : {
-							formatString : '%#d.%#m. %#H:%M',
-							angle : -40,
-						},
-					// Turn off "padding". This will allow data point to lie on the
-					// edges of the grid. Default padding is 1.2 and will keep all
-					// points inside the bounds of the grid.
-					},
-					yaxis : {
-						label : observable
-					}
-				},
-				cursor:{
-					show:	true,
-					zoom:	true,
-				}
-			});
+
+            			// The following plot uses a number of options to set
+                        // the title,
+            // add axis labels, and shows how to use the canvasAxisLabelRenderer
+            // plugin to provide rotated axis labels.
+            var plotChmi = $.jqplot('graph_chmi', [ data ], {
+                // Give the plot a title.
+                title : 'Station: ' + station,
+                // You can specify options for all axes on the plot at once with
+                // the axesDefaults object. Here, we're using a canvas renderer
+                // to draw the axis label which allows rotated text.
+                axesDefaults : {
+                    labelRenderer : $.jqplot.CanvasAxisLabelRenderer
+                },
+                series : [ {
+                    renderer : $.jqplot.OHLCRenderer,
+                    rendererOptions : {
+                        candleStick : true
+                    }
+                } ],
+                // An axes object holds options for all axes.
+                // Allowable axes are xaxis, x2axis, yaxis, y2axis, y3axis, ...
+                // Up to 9 y axes are supported.
+                axes : {
+                    // options for each axis are specified in seperate option
+                    // objects.
+                    xaxis : {
+                        label : "Date",
+                        renderer : $.jqplot.DateAxisRenderer,
+                        rendererOptions : {
+                            tickRenderer : $.jqplot.CanvasAxisTickRenderer,
+                        },
+                        tickOptions : {
+                            formatString : '%#d.%#m. %#H:%M',
+                            angle : -40,
+                        },
+                    // Turn off "padding". This will allow data point to lie on the
+                    // edges of the grid. Default padding is 1.2 and will keep all
+                    // points inside the bounds of the grid.
+                    },
+                    yaxis : {
+                        label : observable
+                    }
+                },
+                cursor : {
+                    show : true,
+                    zoom : true,
+                }
+            });
 			plotChmi.replot();
 			$(window).resize(function() {
 				plotChmi.replot( { resetAxes: true } );
